@@ -1,0 +1,10 @@
+.DS_Store
+/data
+.vscode
+.env
+.env.*
+!.env.example
+data/
+.idea/
+**/node_modules/
+**/target/
