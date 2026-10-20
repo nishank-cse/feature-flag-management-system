@@ -1,6 +1,32 @@
 # Feature Flag Platform
 
-A full-stack feature-flag platform with a polyglot control-plane / data-plane architecture spanning Java, Go, TypeScript, and React — deterministic percentage rollouts, two-tier caching, Redis Pub/Sub cache invalidation, and multi-environment support.
+A full-stack feature-flag management platform built with **Java, Go, TypeScript, and React**. It separates flag administration from runtime evaluation and combines deterministic percentage rollouts, multi-environment configuration, and two-tier caching to keep feature checks fast.
+
+> **Project highlights:** Spring Boot control plane · Go evaluation service · Next.js dashboard · PostgreSQL · Redis · Java and Node.js SDKs · Go load-testing tool
+
+## Table of Contents
+
+- [Architecture](#architecture)
+- [Performance Benchmarks](#performance)
+- [Modules](#modules)
+- [Infrastructure](#infrastructure)
+- [How Flag Evaluation Works](#how-flag-evaluation-works)
+- [Getting Started](#getting-started-local-development)
+- [Tech Stack](#tech-stack-summary)
+- [Project Structure](#project-structure)
+- [Current Limitations](#current-limitations)
+
+---
+
+## What It Does
+
+- **Manage flags centrally:** Create and configure Boolean, String, and Number flags.
+- **Separate environments:** Maintain independent values and API keys for development, staging, QA, and production.
+- **Control rollouts:** Assign variants by percentage using deterministic hashing.
+- **Evaluate efficiently:** Use an in-memory L1 cache and Redis L2 cache, with PostgreSQL as the source of truth.
+- **Keep caches in sync:** Publish invalidation events through Redis Pub/Sub when flag configuration changes.
+- **Integrate with applications:** Use the Java SDK or Node.js SDK to evaluate flags from application code.
+- **Measure performance:** Run constant-load, ramp-up, spike, and soak tests with the included Go benchmarking tool.
 
 ---
 
@@ -41,7 +67,7 @@ A full-stack feature-flag platform with a polyglot control-plane / data-plane ar
 
 ---
 
-## Performance
+## Performance Benchmarks
 
 Stress-tested with a [custom Go benchmarking tool](benchmarking/README.md) across four scenarios — constant load, ramp-up, spike, and a 30-minute soak — for **2.57 million total requests** with **12 timeouts total** across all runs.
 
@@ -378,24 +404,69 @@ Local development uses Docker Compose (`docker-compose.yml`) to spin up both dat
 
 ## Getting Started (Local Development)
 
+### Prerequisites
+
+- Docker Desktop with Docker Compose
+- For running services outside Docker: Java 21, Maven, Go, and Node.js 18+
+
+### Option A: Run the full stack with Docker Compose
+
+From the repository root:
+
 ```bash
-# 1. Start databases
-docker-compose up -d
-
-# 2. Start Admin API (Java 21 + Maven)
-cd services/admin-api
-mvn spring-boot:run
-
-# 3. Start Evaluation API (Go)
-cd services/evaluation-api
-go run cmd/main.go
-
-# 4. Start Dashboard (Node.js 18+)
-cd dashboard
-npm install && npm run dev
+docker compose up --build -d
+docker compose ps
 ```
 
-Admin API: `http://localhost:8080` · Evaluation API: `http://localhost:8081` · Dashboard: `http://localhost:3000`
+Open the dashboard at `http://localhost:3000`.
+
+| Service | Local URL |
+|---|---|
+| Dashboard | `http://localhost:3000` |
+| Admin API | `http://localhost:8080` |
+| Evaluation API | `http://localhost:8081` |
+| PostgreSQL | `localhost:5434` |
+| Redis | `localhost:6379` |
+
+To inspect logs or stop the stack:
+
+```bash
+docker compose logs -f
+docker compose down
+```
+
+> **Configuration and security:** Use local environment variables for secrets. Do not commit real JWT secrets, OAuth credentials, `.env` files, or database data. The first registered user is promoted to Admin, so keep the instance private while setting it up.
+
+### Option B: Run services individually
+
+Start the databases first:
+
+```bash
+docker compose up -d db redis
+```
+
+Then run each application in a separate terminal:
+
+```bash
+# Admin API (Java 21 + Maven)
+cd services/admin-api
+mvn spring-boot:run
+```
+
+```bash
+# Evaluation API (Go)
+cd services/evaluation-api
+go run cmd/main.go
+```
+
+```bash
+# Dashboard (Node.js)
+cd dashboard
+npm install
+npm run dev
+```
+
+The service URLs are listed above.
 
 ---
 
